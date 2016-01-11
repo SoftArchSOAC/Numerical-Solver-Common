@@ -1,5 +1,6 @@
 package soac.softarch.nsc.solver;
 
+import java.util.StringTokenizer;
 import soac.softarch.nsc.models.Parameter;
 import soac.softarch.nsc.models.Unit;
 import soac.softarch.nsc.models.Formula;
@@ -13,34 +14,9 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 public class Solver {
 
     public static double solveFormula(Formula formula, Unit resultUnit, Variable... variables) {
-        String formulaString = formula.getString();
-
-        String[] paramNames = retrieveParmNames(variables);
-
-//old code for {P,U} mechanism
-//        for (int i = 0; formulaString.indexOf('}') > 0;) {
-//            String id_str = formulaString.substring(
-//                    formulaString.indexOf('{') + 1,
-//                    formulaString.indexOf('}')
-//            );
-//            i = formulaString.indexOf('}', i) + 1;
-//
-//            int comma_pos = id_str.indexOf(',');
-//            int parm_id = Integer.parseInt(id_str.substring(0, comma_pos));
-//            int unit_id = Integer.parseInt(id_str.substring(comma_pos));
-//
-//            Chapter c = formula.getNumerical().getTopic().getChapter();
-//            List<Parameter> parameters = dl.getListOfT(Parameter.class, c);
-//
-//            for (Parameter parameter : parameters) {
-//                if (parameter.getId() == id) {
-//                    formulaString = formulaString.replace("{" + id + "}", parameter.getSymbol());
-//                }
-//            }
-//        }
-//
+        String formulaString = getAsFilteredString(formula, variables);
         Expression exp = new ExpressionBuilder(formulaString).
-                variables(paramNames).
+                variables(retrieveParms(variables)).
                 build();
 
         for (Variable variable : variables) {
@@ -50,7 +26,7 @@ public class Solver {
         return exp.evaluate();
     }
 
-    private static String[] retrieveParmNames(Variable... variables) {
+    private static String[] retrieveParms(Variable... variables) {
         String[] retval = new String[variables.length];
 
         for (int i = 0; i < variables.length; i++) {
@@ -58,6 +34,50 @@ public class Solver {
         }
 
         return retval;
+    }
+
+    private static String getAsFilteredString(Formula formula, Variable... variables) {
+        String filteredString = formula.getString();
+
+        //replace every unit existing between { } with its standard multiplier
+        StringBuilder tempFinal = new StringBuilder();
+        StringTokenizer tokenizer = new StringTokenizer(filteredString, "'");
+
+        outer:
+        for (int i = 0; tokenizer.hasMoreTokens(); i++) {
+            String token = tokenizer.nextToken();
+            String[] paramUnitPair = token.split(" ");
+
+            if (i % 2 == 0) {//process only tokens enclosed in ' '
+                tempFinal.append(token);
+                continue;
+            }
+
+            if (paramUnitPair.length > 1) {//token is a 'P U' pair
+                for (Variable variable : variables) {
+                    if (variable.unit.getSymbol().equals(paramUnitPair[1])) {
+                        token = token.replace(paramUnitPair[1], variable.unit.getStandard_multiplier());
+                        tempFinal.append(token);
+                        continue outer;
+                    }
+                }
+            } else {
+                tempFinal.append(token);
+            }
+        }
+        filteredString = tempFinal.toString().replace("'", "");
+
+        //replace ' ' with { }
+        boolean open = true;
+        for (int i = 0; i < filteredString.length(); i++) {
+            if (filteredString.charAt(i) == '\'') {
+                filteredString = filteredString.replaceFirst("\'", open ? "{" : "}");
+                open = !open;
+            }
+        }
+
+        //return final filtered string
+        return filteredString;
     }
 
     public static class Variable {
