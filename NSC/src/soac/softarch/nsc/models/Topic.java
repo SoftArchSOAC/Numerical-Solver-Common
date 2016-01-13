@@ -38,9 +38,7 @@ public class Topic implements Initiable {
 
     @Override
     public void init() {
-        DataLoader dl = new DataLoader();
-
-        this.chapter = dl.getT(Chapter.class, chapter_id);
+        this.chapter = DataLoader.getInstance().getT(Chapter.class, chapter_id);
     }
 
 }

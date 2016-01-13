@@ -44,7 +44,7 @@ public class App implements Initiable {
 
     @Override
     public void init() {
-        admin_ref = new DataLoader().getT(Admin.class, admin);
+        admin_ref = DataLoader.getInstance().getT(Admin.class, admin);
     }
 
 }

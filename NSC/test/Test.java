@@ -19,8 +19,7 @@ import soac.softarch.nsc.solver.Solver;
 public class Test {
 
     public static void main(String[] args) {
-        DataLoader dl = new DataLoader();
-
+        DataLoader dl = DataLoader.getInstance();
         dl.updateContent();
 
         Scanner s = new Scanner(System.in);

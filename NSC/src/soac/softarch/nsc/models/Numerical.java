@@ -50,9 +50,7 @@ public class Numerical implements Initiable {
 
     @Override
     public void init() {
-        DataLoader dl = new DataLoader();
-
-        this.topic = dl.getT(Topic.class, topic_id);
+        this.topic = DataLoader.getInstance().getT(Topic.class, topic_id);
     }
 
 }

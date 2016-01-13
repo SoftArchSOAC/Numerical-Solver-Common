@@ -32,10 +32,15 @@ import java.util.logging.Logger;
  */
 public class DataLoader {
 
+    private static final DataLoader INSTANCE = new DataLoader();
     private final Gson gson;
     private final File outputFile;
 
-    public DataLoader() {
+    public static final DataLoader getInstance() {
+        return INSTANCE;
+    }
+
+    private DataLoader() {
         this.gson = new Gson();
         this.outputFile = new File("C:\\Users\\Vijay\\Desktop\\test.txt");
     }

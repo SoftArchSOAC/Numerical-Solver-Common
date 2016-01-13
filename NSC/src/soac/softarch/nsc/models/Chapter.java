@@ -38,7 +38,7 @@ public class Chapter implements Initiable {
 
     @Override
     public void init() {
-        app = new DataLoader().getT(App.class, app_id);
+        app = DataLoader.getInstance().getT(App.class, app_id);
     }
 
 }

@@ -44,7 +44,7 @@ public class Formula implements Initiable {
 
     @Override
     public void init() {
-        numerical = new DataLoader().getT(Numerical.class, numerical_id);
+        numerical = DataLoader.getInstance().getT(Numerical.class, numerical_id);
     }
 
 }
