@@ -10,9 +10,12 @@ import soac.softarch.nsc.models.Admin;
 import soac.softarch.nsc.models.App;
 import soac.softarch.nsc.models.Chapter;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -30,9 +33,44 @@ import java.util.logging.Logger;
 public class DataLoader {
 
     private final Gson gson;
+    private final File outputFile;
 
     public DataLoader() {
         this.gson = new Gson();
+        this.outputFile = new File("C:\\Users\\Vijay\\Desktop\\test.txt");
+    }
+
+    public void updateContent() {
+        new Thread(() -> {
+            String query = "?table_name=" + "ALL" + "&linker=" + "app_id" + "&link=" + 1;
+
+            try {
+                //get connection to server
+                URL server = new URL("http://localhost/Numerical-Solver-Admin/DataToJSON.php" + query);
+                URLConnection serveConnection = server.openConnection();
+
+                //initialize the writer, if output is to be written.
+                FileWriter writer = new FileWriter(outputFile);
+
+                //Append to writer
+                try (BufferedReader in = new BufferedReader(
+                        new InputStreamReader(serveConnection.getInputStream()))) {
+                    String inputLine;
+
+                    while ((inputLine = in.readLine()) != null) {
+                        writer.append(inputLine);
+                    }
+                    writer.flush();
+                }
+            } catch (MalformedURLException ex) {
+                Logger.getLogger(DataLoader.class
+                        .getName()).log(Level.SEVERE, null, ex);
+
+            } catch (IOException ex) {
+                Logger.getLogger(DataLoader.class
+                        .getName()).log(Level.SEVERE, null, ex);
+            }
+        }).start();
     }
 
     public <T> T getT(Class<T> classofT, int id) {
@@ -66,12 +104,23 @@ public class DataLoader {
         }
 
         JsonElement jsonElement = new JsonParser().parse(jsonString);
-
-        T t = gson.fromJson(jsonElement, classofT);
-        if (t instanceof Initiable) {
-            ((Initiable) t).init();
+        if (jsonElement.isJsonArray()) {
+            JsonArray jsonArray = jsonElement.getAsJsonArray();
+            if (jsonArray.size() == 1) {
+                T t = gson.fromJson(jsonArray.get(0), classofT);
+                if (t instanceof Initiable) {
+                    ((Initiable) t).init();
+                }
+                return t;
+            } else {
+                System.err.println("You have some problem in Database. Possible"
+                        + "duplicate values with same id! (impossible)");
+                return null;
+            }
+        } else {
+            System.err.println("There is some problem in database service. Not serving arrays.");
+            return null;
         }
-        return t;
     }
 
     public <T> List<T> getListOfT(Class<T> classofT, Object filter) {
@@ -124,11 +173,8 @@ public class DataLoader {
                 list.add(t);
             }
         } else {
-            T t = gson.fromJson(jsonElement.getAsJsonObject(), classofT);
-            if (t instanceof Initiable) {
-                ((Initiable) t).init();
-            }
-            list.add(t);
+            System.err.println("There is some problem in database service. Not serving arrays.");
+            return null;
         }
 
         return list;
