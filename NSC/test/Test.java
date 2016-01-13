@@ -19,6 +19,10 @@ import soac.softarch.nsc.solver.Solver;
 public class Test {
 
     public static void main(String[] args) {
+        String servicePath = "http://localhost/Numerical-Solver-Admin/DataToJSON.php";
+        String contentFilePath = "C:\\Users\\Vijay\\Desktop\\test.txt";
+        DataLoader.initDataLoader(servicePath, contentFilePath);
+
         DataLoader dl = DataLoader.getInstance();
         dl.updateContent();
 

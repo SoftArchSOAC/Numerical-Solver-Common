@@ -32,17 +32,29 @@ import java.util.logging.Logger;
  */
 public class DataLoader {
 
-    private static final DataLoader INSTANCE = new DataLoader();
+    private static DataLoader instance;
+
     private final Gson gson;
-    private final File outputFile;
+
+    private String servicePath;
+    private String contentFilePath;
 
     public static final DataLoader getInstance() {
-        return INSTANCE;
+        if (instance == null) {
+            System.err.println("DataLoader has not yet been initialized.");
+        }
+
+        return instance;
     }
 
-    private DataLoader() {
+    public static void initDataLoader(String servicePath, String contentFilePath) {
+        instance = new DataLoader(servicePath, contentFilePath);
+    }
+
+    private DataLoader(String servicePath, String contentFilePath) {
         this.gson = new Gson();
-        this.outputFile = new File("C:\\Users\\Vijay\\Desktop\\test.txt");
+        this.servicePath = servicePath;
+        this.contentFilePath = contentFilePath;
     }
 
     public void updateContent() {
@@ -51,11 +63,12 @@ public class DataLoader {
 
             try {
                 //get connection to server
-                URL server = new URL("http://localhost/Numerical-Solver-Admin/DataToJSON.php" + query);
+                URL server = new URL(servicePath + query);
                 URLConnection serveConnection = server.openConnection();
 
                 //initialize the writer, if output is to be written.
-                FileWriter writer = new FileWriter(outputFile);
+                File contentFile = new File(this.contentFilePath);
+                FileWriter writer = new FileWriter(contentFile);
 
                 //Append to writer
                 try (BufferedReader in = new BufferedReader(
@@ -185,14 +198,14 @@ public class DataLoader {
         return list;
     }
 
-    private static String getJsonString(String table_name, String linker, Object link) {
+    private String getJsonString(String table_name, String linker, Object link) {
         String response = "";
 
         try {
             String query = "?table_name=" + table_name + "&linker=" + linker + "&link=" + link;
 
             //TODO: replace this mechanism to fetch from a JSON file.
-            URL server = new URL("http://localhost/Numerical-Solver-Admin/DataToJSON.php" + query);
+            URL server = new URL(servicePath + query);
             URLConnection conn = server.openConnection();
             try (BufferedReader in = new BufferedReader(
                     new InputStreamReader(conn.getInputStream()))) {
@@ -216,4 +229,21 @@ public class DataLoader {
 
         return response;
     }
+
+    public String getServicePath() {
+        return servicePath;
+    }
+
+    public void setServicePath(String servicePath) {
+        this.servicePath = servicePath;
+    }
+
+    public String getContentFilePath() {
+        return contentFilePath;
+    }
+
+    public void setContentFilePath(String contentFilePath) {
+        this.contentFilePath = contentFilePath;
+    }
+
 }
