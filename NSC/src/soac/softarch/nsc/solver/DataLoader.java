@@ -27,6 +27,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Instance of this class provide methods that can download latest content from
+ * the server to a desired location, and then fetch data from it locally. All
+ * the content downloaded is stored in form of a simple JSON file.<br>
+ * There are two settings that need to be configured before using DataLoader,
+ * they are 'servicePath', and 'contentFilePath'. Both of them can be set by
+ * calling their respective setter methods. {@code servicePath} is the path to
+ * the script that will serve the latest content, and {@code contentFilePath} is
+ * the path to a local file in which the JSON formatted content will be written.
  *
  * @author Vijay
  */
@@ -39,6 +47,19 @@ public class DataLoader {
     private String servicePath;
     private String contentFilePath;
 
+    private DataLoader(String servicePath, String contentFilePath) {
+        this.gson = new Gson();
+        this.servicePath = servicePath;
+        this.contentFilePath = contentFilePath;
+    }
+
+    /**
+     * Gets the only instance of this class. Note that DataLoader must have been
+     * initialized before calling this method.<br>
+     * DataLoader can be initialized by its {@code initDataLoader()} method.
+     *
+     * @return Returns the instance of this singleton class.
+     */
     public static final DataLoader getInstance() {
         if (instance == null) {
             System.err.println("DataLoader has not yet been initialized.");
@@ -47,50 +68,61 @@ public class DataLoader {
         return instance;
     }
 
+    /**
+     * Initializes the DataLoader class instance.
+     *
+     * @param servicePath The path to the online service that will serve the
+     * latest content for this App.
+     * @param contentFilePath
+     */
     public static void initDataLoader(String servicePath, String contentFilePath) {
         instance = new DataLoader(servicePath, contentFilePath);
     }
 
-    private DataLoader(String servicePath, String contentFilePath) {
-        this.gson = new Gson();
-        this.servicePath = servicePath;
-        this.contentFilePath = contentFilePath;
-    }
-
+    /**
+     * Downloads local content, by fetching the latest one from the server.
+     */
     public void updateContent() {
-        new Thread(() -> {
-            String query = "?table_name=" + "ALL" + "&linker=" + "app_id" + "&link=" + 1;
+        String query = "?table_name=" + "ALL" + "&linker=" + "app_id" + "&link=" + 1;
 
-            try {
-                //get connection to server
-                URL server = new URL(servicePath + query);
-                URLConnection serveConnection = server.openConnection();
+        try {
+            //get connection to server
+            URL server = new URL(servicePath + query);
+            URLConnection serveConnection = server.openConnection();
 
-                //initialize the writer, if output is to be written.
-                File contentFile = new File(this.contentFilePath);
-                FileWriter writer = new FileWriter(contentFile);
+            //initialize the writer, if output is to be written.
+            File contentFile = new File(this.contentFilePath);
+            FileWriter writer = new FileWriter(contentFile);
 
-                //Append to writer
-                try (BufferedReader in = new BufferedReader(
-                        new InputStreamReader(serveConnection.getInputStream()))) {
-                    String inputLine;
+            //Append to writer
+            try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(serveConnection.getInputStream()))) {
+                String inputLine;
 
-                    while ((inputLine = in.readLine()) != null) {
-                        writer.append(inputLine);
-                    }
-                    writer.flush();
+                while ((inputLine = in.readLine()) != null) {
+                    writer.append(inputLine);
                 }
-            } catch (MalformedURLException ex) {
-                Logger.getLogger(DataLoader.class
-                        .getName()).log(Level.SEVERE, null, ex);
-
-            } catch (IOException ex) {
-                Logger.getLogger(DataLoader.class
-                        .getName()).log(Level.SEVERE, null, ex);
+                writer.flush();
             }
-        }).start();
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(DataLoader.class
+                    .getName()).log(Level.SEVERE, null, ex);
+
+        } catch (IOException ex) {
+            Logger.getLogger(DataLoader.class
+                    .getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
+    /**
+     * Gets a single object of specified class and a unique id.
+     *
+     * @param <T> The type of object you wish to retrieve. <b>T</b> can be one
+     * of the model class from the package "soac.softarch.nsc.models".
+     * @param classofT The class of T i.e. the object you wish to retrieve.
+     * @param id The unique id of the object to retrieve
+     * @return Returns an object from the server of specified type and unique id
+     */
     public <T> T getT(Class<T> classofT, int id) {
         String jsonString;
 
@@ -141,6 +173,23 @@ public class DataLoader {
         }
     }
 
+    /**
+     * Gets a list of objects of specified class and filter.<br>
+     * Filter is used to reference the foreign relation of the object you are
+     * fetching. For eg. If you are retrieving list of topics of a particular
+     * chapter, then {@code classofT} will be {@code Topic.class} and filter
+     * should be an instance of {@code Chapter} whose topics you want to get.
+     *
+     * @param <T> The type of object you wish to retrieve in a list. <b>T</b>
+     * can be one of the model class from the package
+     * "soac.softarch.nsc.models".
+     * @param classofT The class of <b>T</b> i.e. the object you wish to
+     * retrieve in a list.
+     * @param filter An object which has a foreign relation with the list of
+     * objects you wish to retrieve.
+     * @return Returns a list of objects of type <b>T</b> constrained to the
+     * filter.
+     */
     public <T> List<T> getListOfT(Class<T> classofT, Object filter) {
         List<T> list = new ArrayList<>();
         String jsonString;
@@ -230,18 +279,39 @@ public class DataLoader {
         return response;
     }
 
+    /**
+     * Gets the path to the service that returns the app content.
+     *
+     * @return Returns the service path.
+     */
     public String getServicePath() {
         return servicePath;
     }
 
+    /**
+     * Sets the path to the service that will return the app content. The
+     * content returned by the service must be a well formatted JSON string.
+     *
+     * @param servicePath The path to service.
+     */
     public void setServicePath(String servicePath) {
         this.servicePath = servicePath;
     }
 
+    /**
+     * Gets the path to the file that stores local content.
+     *
+     * @return Returns the path to file that has the local content.
+     */
     public String getContentFilePath() {
         return contentFilePath;
     }
 
+    /**
+     * Sets the path to the file that will have the local content.
+     *
+     * @param contentFilePath The path to file.
+     */
     public void setContentFilePath(String contentFilePath) {
         this.contentFilePath = contentFilePath;
     }
